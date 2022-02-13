@@ -1,0 +1,38 @@
+#!/bin/bash
+
+up () {
+  echo "setting up containers in background"
+  docker-compose up -d
+}
+
+down() {
+    echo "tearing down all containers for this project"
+    docker-compose down -v
+    docker stop $(docker ps -a | grep 'exchange\|svc-m' | awk '{print $1}') 2>&1
+    docker rm $(docker ps -a | grep 'exchange\|svc-m' | awk '{print $1}') 2>&1
+}
+
+build() {
+  echo "(re) building containers"
+  docker-compose build $1
+}
+
+
+case $1 in
+  "up")
+    up
+  ;;
+  "down")
+    down
+  ;;
+  "build")
+    build $2
+  ;;
+  "exchange")
+    echo "running shell for exchange"
+    docker-compose exec exchange /bin/sh
+  ;;
+  *)
+    echo "unsupported argument: $1"
+  ;;
+esac
