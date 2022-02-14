@@ -3,10 +3,12 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.exchange
+    ports:
+      - 29091:29091
     depends_on:
       - kafka
     volumes:
-      - ./:/app
+      - ./exchange:/exchange
     command: tail -F anything
   zookeeper:
     image: confluentinc/cp-zookeeper:latest

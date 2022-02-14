@@ -28,15 +28,21 @@ type Message struct {
 var done chan interface{}
 var interrupt chan os.Signal
 
-func receiveHandler(connection *websocket.Conn) {
+func receiveHandler(connection *websocket.Conn, kafkaConnection *kafka.Conn) {
 	defer close(done)
 	for {
-		tp, msg, err := connection.ReadMessage()
+		_, msg, err := connection.ReadMessage()
 		if err != nil {
 			log.Println("Error in receive:", err)
 			return
 		}
-		processMessage(tp, msg)
+
+		var message Message
+		json.Unmarshal(msg, &message)
+		messageJSON, _ := json.Marshal(message) // ol' in-out out-in
+		kafkaConnection.SetWriteDeadline(time.Now().Add(1 * time.Second))
+		kafkaConnection.WriteMessages(kafka.Message{Value: []byte(messageJSON)})
+		fmt.Println("sent to kafka", message.Events)
 	}
 }
 
@@ -51,10 +57,10 @@ func processMessage(mt int, p []byte) {
 
 func main() {
 
-	topic := "test"
+	topic := "coins"
 	partition := 0
 
-	kafkaConn, err := kafka.DialLeader(context.Background(), "tcp", "localhost:9092", topic, partition)
+	kafkaConn, err := kafka.DialLeader(context.Background(), "tcp", "127.0.0.1:2181", topic, partition)
 
 	if err != nil {
 		fmt.Printf("%s\n", err)
@@ -89,7 +95,8 @@ func main() {
 		log.Fatal("Error connecting to Websocket Server:", err)
 	}
 	defer conn.Close()
-	go receiveHandler(conn)
+	defer kafkaConn.Close()
+	go receiveHandler(conn, kafkaConn)
 
 	// Our main loop for the client
 	// We send our relevant packets here

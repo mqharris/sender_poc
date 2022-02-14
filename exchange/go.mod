@@ -1,4 +1,4 @@
-module ex
+module exchange
 
 go 1.16
 
