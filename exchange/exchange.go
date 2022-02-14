@@ -60,11 +60,9 @@ func main() {
 	topic := "coins"
 	partition := 0
 
-	kafkaConn, err := kafka.DialLeader(context.Background(), "tcp", "127.0.0.1:2181", topic, partition)
-
+	kafkaConn, err := kafka.DialLeader(context.Background(), "tcp", "localhost:9092", topic, partition)
 	if err != nil {
-		fmt.Printf("%s\n", err)
-		return
+		log.Fatal("failed to dial leader:", err)
 	}
 
 	done = make(chan interface{})    // Channel to indicate that the receiverHandler is done
